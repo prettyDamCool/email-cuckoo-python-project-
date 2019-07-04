@@ -169,17 +169,67 @@ def file_content(M):
 	            	log.info("No hash, URL or attachment contained within the email")
 	            	send_no_content()
 		            
-		  
-	def get_hash_report():
-	    
-	    global md5
-	    global sha1
-	    global sha256
-	    global sha512
-	    global reportLocation
-    	global sqlite_file
-    	
+		# Hello World program in Python
+def get_hash_report():
+        global md5
+        global sha1
+        global sha256
+        flobal report_locaton 
+        global sql_file
+        
+        log.debug("connecting to the database")
+        conn = sqllite2.connect(sqi_file) #connection to database
+        c = conn.cursor()
+        
+        log.debug("coloms form samples table")
+        if md5 is not None:
+            c.execute("SELECT id, md5 FROM samples WHERE md5 ='%s'" % md5)
+        elif sha1 is not None:
+            c.execute("SELECT id, sha1 FROM samples WHERE sha1 ='%s'" % sha1)
+        elif sha256 is not None:
+            c.execute("SELECT id, sha256 FROM samples WHERE sha256 ='%s'" % sha256)
+        elif sha512 is not None:
+            c.execute("SELECT id, sha512 FROM samples WHERE sha512 ='%s'" % sha512)
+        
+        #fetches data 
+        data = c.fetclone()
+        if data == None:
+                log.info("No report for the hash value which has been submitted")
+                send_no_hash()
+        else:
+                log.info("Found hash: %s" % data[1])
+               sampleID = data[0]
+               log.info("Select id and sample_id from tasks table where sample_id is the same as the id retrieved from the previous table")
+	           c.execute("SELECT id, sample_id FROM tasks WHERE sample_id = '%s'" %sampleID)
+	           #gets the results to report ID 
+	           reportID = c.fetchone()
+	           reportID = reportID[0]
+	           reportllication  = "/location"
+	           
+def send_no_content():
+    global sender
+    time.sleep(10)
+    recipients = [sender]
+    email_list = [elem.strip().split(',') for elm in recipients]
+    #makes email 
+    msg = MINEMultipart()
+    msg['Subject'] = "set header name"
+    msg ['from'] = "somwwheew"
+    
+    msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
 	
-            
+	# Define the body of the email
+	part = MIMEText("Hi, \n\n Please disregard the submission confirmation email as unfortunately your submission could not be analysed.\n Please ensure that the email you send contains one of the following: MD5 Hash, URL or Attachment\n\nThanks, \nMalware Labs.\n\n\nPlease do not reply to this e-mail.")
+	msg.attach(part)
+	 
+	# Send the email via gmails SMTP server
+	server = smtplib.SMTP("smtp.gmail.com:587")
+	server.ehlo()
+	server.starttls()
+	server.login("example@gmail.com", "password")
+	server.sendmail(msg['From'], emaillist , msg.as_string())
+	print "Email sent."
+	return
+
 
    
