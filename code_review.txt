@@ -221,3 +221,206 @@ def send_no_content():
     server.sendmail(msg['From'], emaillist, msg.as_string())
     print "Email sent."
 return
+send no_hash():
+    global sender
+    print "sending email too" % sender
+    recipients = [sender]
+    email_list = [elem.strip().split(',')for elm in recipients]
+
+msg = MINEMultipart()
+# creates email for one recipient
+msg[Subject] = "testing 12345656"
+msg = ['from'] = 'test_test@gmail.com'
+msg.preamble = 'you will not see this in a email'
+# Define the body of the email
+part = MIMEText("Hi, \n\nUnfortunately we do not currently have a report regarding the hash you have submitted.\nFeel free to follow up with an email containing a sample you would like analysed.\n\nThanks, \nMalware Labs.\n\n\nPlease do not reply to this e-mail.")
+msg.attach(part)
+# Send the email via gmails SMTP server
+server = smtplib.SMTP("smtp.gmail.com:587")
+server.ehlo()
+server.starttls()
+server.login("example@gmail.com", "password")
+server.sendmail(msg['From'], emaillist, msg.as_string())
+print "Email sent."
+return
+def send_hash_report():
+    # This will send an email to the initial sender containing the report identified in the sqlite database
+    # IMAP does not allow for sending mail so we use SMTP
+    global sender
+    global reportLocation
+    global md5
+
+    print "Sending an email to: %s...\n" % sender
+    # Set the recipient and parse the list in case of multiple recipients
+    # This must be parsed even if there is only ever one recipient
+    recipients = [sender]
+    emaillist = [elem.strip().split(',') for elem in recipients]
+    # Create the container for the email and fill some fields
+    msg = MIMEMultipart()
+    msg['Subject'] = 'Malware Labs: Hash Report'
+    msg['From'] = 'example@gmail.com'
+    # Defines some formatting for MIME-aware mail reader 
+    msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
+    # Define the body of the email
+    part = MIMEText("Hi, \n\nPlease find the attached file that contains a basic report regarding your inquiry. \n\nThanks, \nMalware Labs.\n\n\nPlease do not reply to this e-mail.")
+    msg.attach(part)
+    # Attach the report to the email
+    # put in error handling
+    try:
+        part = MIMEApplication(open(reportLocation, "rb").read())
+        except IOError:
+       send_no_hash()
+        return
+	    part.add_header('Content-Disposition', 'attachment', filename=reportLocation)
+       msg.attach(part)
+	 
+	# Send the email via gmails SMTP server
+	server = smtplib.SMTP("smtp.gmail.com:587")
+	server.ehlo()
+	server.starttls()
+	server.login("example@gmail.com", "password")
+	server.sendmail(msg['From'], emaillist , msg.as_string())
+
+	print "Email sent."
+
+	return
+def send_new_report():
+    # This will send an email to the initial sender containing a report regarding the file they emailed to us
+    global waiting
+    global sender
+    global newReportLocation
+print "\nSending an email to: %s...\n" % sender
+# Set the recipient and parse the list in case of multiple recipients
+# This must be parsed even if there is only ever one recipient
+recipients = [sender]
+emaillist = [elem.strip().split(',') for elem in recipients]
+# Create the container for the email and fill some fields
+msg = MIMEMultipart()
+msg['Subject'] = 'Malware Labs: Submission Report'
+msg['From'] = 'example@gmail.com'
+# Define some formatting for MIME-aware mail reader
+msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
+# Define the body of the email
+part = MIMEText("Hi, \n\nPlease find the attached file that contains a basic report regarding your inquiry.\n\nThanks, \nMalware Labs.\n\n\nPlease do not reply to this e-mail.")
+msg.attach(part)
+# Attach the new report to the email
+    part = MIMEApplication(open(newReportLocation, "rb").read())
+    part.add_header('Content-Disposition', 'attachment', filename=newReportLocation)
+    msg.attach(part)
+# Send the email via gmails SMTP server
+    server = smtplib.SMTP("smtp.gmail.com:587")
+    server.ehlo()
+    server.starttls()
+    server.login("example@gmail.com", "password")
+    server.sendmail(msg['From'], emaillist, msg.as_string()
+    print "Email sent."
+    return
+def cuckoo_submission():
+  global attachemnt_path
+  global sender
+  global newReportLocation
+  global taskNumber
+  call(['/location to fucking file subit_file.py'"%s" attachemnt_path])
+  get_task_number()
+# Create the path of the new report location
+    newReportLocation='/home/mal/cuckoo-modified-master/storage/analyses/'+str(tasksNum)+'/reports/summary-reportCompact2.html'
+      while not os.path.exists(newReportLocation):
+      time.sleep(0.1)
+# A secondary check to make sure the report exists
+    if os.path.isfile(newReportLocation):
+      send_new_report()
+    else:
+      raise ValueError("%s is not a file." % newReportLocation)
+    return
+def url_submission():
+    # gets the ural to cuckoo via command line
+    # This submits a URL to cuckoo through the command line interface
+    global url
+    global newReportLocation
+    global sqlite_file
+    print "Submitting URL to cuckoo... \n"
+    # Submit the URL from the email to cuckoo through the command line
+    call("/home/mal/cuckoo-modified-master/utils/submit.py --url %s" % url, shell=True)
+    time.sleep(3)
+    conn = sqlite3.connect(sqlite_file)
+    c = conn.cursor()
+    c.execute("SELECT id, target FROM tasks WHERE target = '%s'" % url)
+    data = c.fetchall()
+    if data not None:
+        print "Critical Error: the samples is not in our database and has not been submitted"
+        return
+    urlID = data[-1]
+    urlID = urlID[0]
+    print "The URL has the folllowing report & ID number: %s" % urlID
+    newReportLocation = '/home/mal/cuckoo-modified-master/storage/analyses/' + str(urlID) + '/reports/summary-reportCompact2.html'
+# Check if the report exists and waits until it does exist
+    while not os.path.exists(newReportLocation):
+        time.sleep(0.1)
+# A secondary check to make sure the report exists
+        if os.path.isfile(newReportLocation):
+            print "The report exists, prepareing to email the report..."
+        send_new_report()
+    else:
+      raise ValueError("%s is not a file." % newReportLocation)
+    return
+def get_task_number():
+    global sqlite_file
+    global tasksNum
+    global att_path
+# Hash the file that has been submitted
+    hasher = hashlib.md5()
+   with open(att_path, 'rb') as afile:
+      buf = afile.read()
+		hasher.update(buf)
+	attachment_hash = hasher.hexdigest()
+	time.sleep(3)
+	# Connect to the database
+	conn = sqlite3.connect(sqlite_file)
+	# Cursor is how you navigate the database
+	c = conn.cursor()	
+# Find the id for the hash
+	c.execute("SELECT id FROM samples WHERE md5 = '%s'" % attachment_hash)	
+	# Fetch one result as in this table a hash value has a one to one relationship
+	data = c.fetchone()
+	if data == None:
+		print "Critical Error: the samples is not in our database and has not been submitted"
+		return
+	# Take the id out of an array 
+	sampleID = data[0]
+	print "This sample is ID number:%s\n" % sampleID
+	# Select id and sample_id from tasks table where sample_id is the same as the id retrieved earlier
+	c.execute("SELECT id, sample_id FROM tasks WHERE sample_id = '%s'" %sampleID)
+	# Fetch one results, this fetches the earliest report ID of the sample
+	# SampleID has a one to many relationship with reportID
+	# However we are just selecting the first occurence of a report regarding the sample
+	reportID = c.fetchall()
+	tasksNum = reportID[-1]
+	tasksNum = tasksNum[0]
+	print "The report number for this sample is: %s\n" % tasksNum
+	return
+def extraction_failure():
+# This will send an email to the initial sender containing the report identified in the sqlite database
+# IMAP does not allow for sending mail so we use SMTP
+    global sender
+    print "Sending an email to: %s...\n" % sender
+    # Set the recipient and parse the list in case of multiple recipients
+    # This must be parsed even if there is only ever one recipient
+    recipients = [sender]
+    emaillist = [elem.strip().split(',') for elem in recipients]
+    # Create the container for the email and fill some fields
+    msg = MIMEMultipart()
+    msg['Subject'] = 'Malware Labs: Analysis Failure'
+    msg['From'] = 'example@gmail.com'
+# Defines some formatting for MIME-aware mail reader
+    msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
+    # Define the body of the email
+    part = MIMEText("Hi, \n\n You have used AES256 to encrypt your .zip file, please ensure to use ZipCrypto otherwise we can not analyse your submission.\n\nThanks, \nMalware Labs.\n\n\nPlease do not reply to this e-mail.")
+    msg.attach(part)
+# Send the email via gmails SMTP server
+    server = smtplib.SMTP("smtp.gmail.com:587")
+    server.ehlo()
+    server.starttls()
+    server.login("example@gmail.com", "password")
+    server.sendmail(msg['From'], emaillist, msg.as_string())
+    print "Email sent."
+    return
